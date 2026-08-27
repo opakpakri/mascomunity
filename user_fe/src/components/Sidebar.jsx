@@ -30,7 +30,8 @@ export default function Sidebar({
     <div className={`sidebar ${isCollapsed ? 'collapsed' : ''}`}>
       <div className="sidebar-header">
         <a href="/" className="logo" onClick={(e) => { e.preventDefault(); handleGameSelect('Home'); }}>
-          Mas<span>Comunity.</span>
+          <span className="logo-full"><span className="logo-mas">Mas</span><span className="logo-comunity">Comunity</span><span className="logo-dot">.</span></span>
+          <span className="logo-compact"><span className="logo-mas">M</span><span className="logo-dot">.</span></span>
         </a>
 
         {/* Desktop Collapse Button */}

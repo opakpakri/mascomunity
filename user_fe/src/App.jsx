@@ -40,29 +40,37 @@ export default function App() {
 
   // Fetch countdown data from backend
   useEffect(() => {
-    const fetchEvents = async () => {
-      setLoading(true);
+    let isMounted = true;
+
+    const fetchEvents = async (isInitial = false) => {
+      if (isInitial) setLoading(true);
       try {
         const apiUrl = import.meta.env.VITE_API_URL || '';
         const response = await fetch(`${apiUrl}/api/games`);
-        if (response.ok) {
+        if (response.ok && isMounted) {
           const data = await response.json();
           setEvents(data);
-        } else {
+        } else if (!response.ok) {
           console.error('Failed to fetch events from API');
         }
       } catch (err) {
         console.error('API connection failed. Using fallback empty state or log warnings:', err);
       } finally {
-        setLoading(false);
+        if (isInitial && isMounted) {
+          setLoading(false);
+        }
       }
     };
 
-    fetchEvents();
-    // Poll data every 30 seconds to keep fresh
-    const interval = setInterval(fetchEvents, 30000);
-    return () => clearInterval(interval);
+    fetchEvents(true);
+    // Poll data silently every 30 seconds to keep fresh without triggering loading UI
+    const interval = setInterval(() => fetchEvents(false), 30000);
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
   }, []);
+
 
   const triggerToast = (message) => {
     setToastMessage(message);

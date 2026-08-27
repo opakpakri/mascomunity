@@ -228,44 +228,65 @@ app.get('/api/games', async (req, res) => {
     for (let event of gamesList) {
       event.status = event.status || 'active';
 
-      const isEndgame = event.kategori.toLowerCase() === 'endgame' || event.kategori.toLowerCase() === 'end game';
-      const isExpiredTime = now > new Date(event.tanggal_berakhir).getTime();
-      const isExpiredStatus = event.status === 'expired';
+      const isEndgame = event.kategori && (
+        event.kategori.toLowerCase() === 'endgame' || 
+        event.kategori.toLowerCase() === 'end game'
+      );
+      const endTime = new Date(event.tanggal_berakhir).getTime();
 
-      if (isEndgame && (isExpiredTime || isExpiredStatus)) {
-        let start = new Date(event.tanggal_mulai).getTime();
-        let end = new Date(event.tanggal_berakhir).getTime();
-        let duration = end - start;
+      // 60-second safety buffer past end time to prevent premature server resets when client refreshes near 0s
+      if (now >= endTime + 60000) {
+        if (isEndgame) {
+          let start = new Date(event.tanggal_mulai).getTime();
+          let end = endTime;
+          let duration = end - start;
 
-        if (duration <= 0) {
-          duration = 14 * 24 * 60 * 60 * 1000;
-        }
-
-        while (end <= now) {
-          start += duration;
-          end += duration;
-        }
-
-        event.tanggal_mulai = new Date(start).toISOString();
-        event.tanggal_berakhir = new Date(end).toISOString();
-        event.status = 'active';
-
-        if (useFallback()) {
-          const idx = fallbackDb.games.findIndex(g => g.id === event.id);
-          if (idx !== -1) {
-            fallbackDb.games[idx] = { ...event };
+          if (duration <= 0) {
+            duration = 14 * 24 * 60 * 60 * 1000;
           }
-        } else {
-          await supabase
-            .from('game')
-            .update({ 
-              tanggal_mulai: event.tanggal_mulai, 
-              tanggal_berakhir: event.tanggal_berakhir, 
-              status: 'active' 
-            })
-            .eq('id', event.id);
+
+          while (end <= now) {
+            start += duration;
+            end += duration;
+          }
+
+          event.tanggal_mulai = new Date(start).toISOString();
+          event.tanggal_berakhir = new Date(end).toISOString();
+          event.status = 'active';
+
+          if (useFallback()) {
+            const idx = fallbackDb.games.findIndex(g => g.id === event.id);
+            if (idx !== -1) {
+              fallbackDb.games[idx] = { ...event };
+            }
+          } else {
+            await supabase
+              .from('game')
+              .update({ 
+                tanggal_mulai: event.tanggal_mulai, 
+                tanggal_berakhir: event.tanggal_berakhir, 
+                status: 'active' 
+              })
+              .eq('id', event.id);
+          }
+        } else if (event.status === 'active') {
+          // Automatically change status to expired in database when end time passes
+          event.status = 'expired';
+
+          if (useFallback()) {
+            const idx = fallbackDb.games.findIndex(g => g.id === event.id);
+            if (idx !== -1) {
+              fallbackDb.games[idx].status = 'expired';
+            }
+          } else {
+            await supabase
+              .from('game')
+              .update({ status: 'expired' })
+              .eq('id', event.id);
+          }
         }
       }
+
       updatedGames.push(event);
     }
 

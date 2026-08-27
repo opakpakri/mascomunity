@@ -1,4 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+
+import genshinImg from '../assets/genshin.webp';
+import hsrImg from '../assets/hsr.webp';
+import zzzImg from '../assets/zzz.webp';
+import wwImg from '../assets/ww.webp';
+import endfieldImg from '../assets/endfield.webp';
+import nteImg from '../assets/nte.webp';
+import heroImg from '../assets/hero.png';
 
 export default function CountdownCard({ event }) {
   const [timeLeft, setTimeLeft] = useState({
@@ -9,17 +17,32 @@ export default function CountdownCard({ event }) {
     seconds: '00'
   });
 
+  const [localDates, setLocalDates] = useState({
+    start: event.tanggal_mulai,
+    end: event.tanggal_berakhir
+  });
+
+  const loopTimeoutRef = useRef(null);
+
+  // Sync local dates when props change (unless currently in a local expired transition)
+  useEffect(() => {
+    setLocalDates({
+      start: event.tanggal_mulai,
+      end: event.tanggal_berakhir
+    });
+  }, [event.tanggal_mulai, event.tanggal_berakhir]);
+
   // Default placeholder images matching the game names if no image URL is provided
   const getPlaceholderImage = (gameName) => {
     const images = {
-      'genshin impact': 'https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?w=600&auto=format&fit=crop&q=60',
-      'honkai: star rail': 'https://images.unsplash.com/photo-1614850523459-c2f4c699c52e?w=600&auto=format&fit=crop&q=60',
-      'zenless zone zero': 'https://images.unsplash.com/photo-1542751371-adc38448a05e?w=600&auto=format&fit=crop&q=60',
-      'wuthering waves': 'https://images.unsplash.com/photo-1511512578047-dfb367046420?w=600&auto=format&fit=crop&q=60',
-      'arknights endfield': 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?w=600&auto=format&fit=crop&q=60',
-      'neverness to everness': 'https://images.unsplash.com/photo-1534447677768-be436bb09401?w=600&auto=format&fit=crop&q=60'
+      'genshin impact': genshinImg,
+      'honkai: star rail': hsrImg,
+      'zenless zone zero': zzzImg,
+      'wuthering waves': wwImg,
+      'arknights endfield': endfieldImg,
+      'neverness to everness': nteImg
     };
-    return images[gameName.toLowerCase()] || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=600&auto=format&fit=crop&q=60';
+    return images[gameName ? gameName.toLowerCase() : ''] || heroImg;
   };
 
   const imageSrc = event.gambar && event.gambar.trim() !== '' ? event.gambar : getPlaceholderImage(event.nama_game);
@@ -32,23 +55,11 @@ export default function CountdownCard({ event }) {
 
     const calculateTime = () => {
       const now = new Date().getTime();
-      let startTime = new Date(event.tanggal_mulai).getTime();
-      let endTime = new Date(event.tanggal_berakhir).getTime();
+      const startTime = new Date(localDates.start).getTime();
+      const endTime = new Date(localDates.end).getTime();
 
-      // If category is endgame and time expired, auto-loop forward seamlessly
-      if (isEndgame && now > endTime) {
-        let duration = endTime - startTime;
-        if (duration <= 0) {
-          duration = 14 * 24 * 60 * 60 * 1000;
-        }
-        while (endTime <= now) {
-          startTime += duration;
-          endTime += duration;
-        }
-      }
-
-      if (now > endTime) {
-        // Non-endgame event expired
+      if (now >= endTime) {
+        // Time is up! Display EXPIRED state
         setTimeLeft({
           status: 'ended',
           days: '00',
@@ -56,8 +67,29 @@ export default function CountdownCard({ event }) {
           minutes: '00',
           seconds: '00'
         });
+
+        // ONLY IF endgame category: After showing EXPIRED for 3 seconds, restart timer for next cycle!
+        if (isEndgame && !loopTimeoutRef.current) {
+          loopTimeoutRef.current = setTimeout(() => {
+            let duration = endTime - startTime;
+            if (duration <= 0) {
+              duration = 14 * 24 * 60 * 60 * 1000;
+            }
+            let nextStart = startTime;
+            let nextEnd = endTime;
+            while (nextEnd <= Date.now()) {
+              nextStart += duration;
+              nextEnd += duration;
+            }
+            setLocalDates({
+              start: new Date(nextStart).toISOString(),
+              end: new Date(nextEnd).toISOString()
+            });
+            loopTimeoutRef.current = null;
+          }, 3000);
+        }
       } else {
-        // Active event or auto-looped endgame event
+        // Active countdown - 100% FIXED & UNTOUCHABLE until endTime is reached
         const diff = endTime - now;
         setTimeLeft({
           status: 'active',
@@ -83,8 +115,14 @@ export default function CountdownCard({ event }) {
     calculateTime();
     const interval = setInterval(calculateTime, 1000);
 
-    return () => clearInterval(interval);
-  }, [event.tanggal_mulai, event.tanggal_berakhir, event.kategori]);
+    return () => {
+      clearInterval(interval);
+      if (loopTimeoutRef.current) {
+        clearTimeout(loopTimeoutRef.current);
+        loopTimeoutRef.current = null;
+      }
+    };
+  }, [localDates.start, localDates.end, event.kategori]);
 
   return (
     <div className="countdown-card">
