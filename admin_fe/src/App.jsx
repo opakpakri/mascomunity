@@ -465,7 +465,7 @@ export default function App() {
       <header className="header" style={{ padding: '0 40px' }}>
         <div className="header-left">
           <a href="/" className="logo" style={{ pointerEvents: 'none', color: '#ffffff' }}>
-            <span style={{ color: '#00ffcc' }}>Mas</span>Comunity<span style={{ color: '#00ffcc' }}>.</span> <span style={{ fontSize: '12px', background: 'rgba(0, 255, 204, 0.1)', color: '#00ffcc', padding: '4px 8px', borderRadius: '4px', marginLeft: '10px' }}>ADMIN PANEL</span>
+            <span style={{ color: '#00ffcc' }}>Mas</span>Community<span style={{ color: '#00ffcc' }}>.</span> <span style={{ fontSize: '12px', background: 'rgba(0, 255, 204, 0.1)', color: '#00ffcc', padding: '4px 8px', borderRadius: '4px', marginLeft: '10px' }}>ADMIN PANEL</span>
           </a>
         </div>
         {token && (
@@ -496,7 +496,7 @@ export default function App() {
                     type="email" 
                     name="email" 
                     className="form-input" 
-                    placeholder="admin@mascomunity.com" 
+                    placeholder="admin@mascommunity.com" 
                     value={authForm.email}
                     onChange={handleAuthChange}
                   />
@@ -546,7 +546,7 @@ export default function App() {
                     type="email" 
                     name="email" 
                     className="form-input" 
-                    placeholder="admin@mascomunity.com" 
+                    placeholder="admin@mascommunity.com" 
                     value={authForm.email}
                     onChange={handleAuthChange}
                   />
@@ -763,7 +763,7 @@ export default function App() {
       </main>
 
       <footer className="footer" style={{ marginTop: 'auto' }}>
-        Copyright © {new Date().getFullYear()} MasComunity.
+        Copyright © {new Date().getFullYear()} MasCommunity.
       </footer>
 
       {/* Scroll to Top Button */}

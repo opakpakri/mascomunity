@@ -254,7 +254,7 @@ export default function App() {
         </main>
 
         <footer className="footer">
-          Copyright © {new Date().getFullYear()} MasComunity.
+          Copyright © {new Date().getFullYear()} MasCommunity.
         </footer>
       </div>
 
