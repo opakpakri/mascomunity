@@ -455,13 +455,18 @@ app.delete('/api/games/:id', authenticateToken, async (req, res) => {
   }
 });
 
-// Start express server
-app.listen(PORT, () => {
-  console.log(`[Server] Running on http://localhost:${PORT}`);
-  if (useFallback()) {
-    console.log('[Server] Note: Database operations are running in fallback in-memory mode.');
-    console.log('[Server] Pre-seeded admin: admin@mascomunity.com / adminpassword');
-  } else {
-    console.log('[Server] Connected to Supabase.');
-  }
-});
+// Export app for Vercel Serverless Functions
+export default app;
+
+// Start local express server when not running in Vercel serverless environment
+if (!process.env.VERCEL) {
+  app.listen(PORT, () => {
+    console.log(`[Server] Running on http://localhost:${PORT}`);
+    if (useFallback()) {
+      console.log('[Server] Note: Database operations are running in fallback in-memory mode.');
+      console.log('[Server] Pre-seeded admin: admin@mascomunity.com / adminpassword');
+    } else {
+      console.log('[Server] Connected to Supabase.');
+    }
+  });
+}

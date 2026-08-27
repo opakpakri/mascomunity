@@ -9,6 +9,8 @@ export default function App() {
   const [toastMessage, setToastMessage] = useState(null);
   const [showScrollTop, setShowScrollTop] = useState(false);
 
+  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
   // Scroll listener for scroll-to-top button
   useEffect(() => {
     const handleScroll = () => {
@@ -69,7 +71,7 @@ export default function App() {
   const fetchEvents = async () => {
     try {
       // Pass 'all=true' query parameter to retrieve active and expired events for admin
-      const response = await fetch('http://localhost:5000/api/games?all=true');
+      const response = await fetch(`${API_URL}/api/games?all=true`);
       if (response.ok) {
         const data = await response.json();
         setEvents(data);
@@ -163,7 +165,7 @@ export default function App() {
     }
 
     try {
-      const response = await fetch('http://localhost:5000/api/auth/register', {
+      const response = await fetch(`${API_URL}/api/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(authForm)
@@ -211,7 +213,7 @@ export default function App() {
     }
 
     try {
-      const response = await fetch('http://localhost:5000/api/auth/login', {
+      const response = await fetch(`${API_URL}/api/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: authForm.email, password: authForm.password })
@@ -309,8 +311,8 @@ export default function App() {
 
     try {
       const url = isEditing 
-        ? `http://localhost:5000/api/games/${eventForm.id}` 
-        : 'http://localhost:5000/api/games';
+        ? `${API_URL}/api/games/${eventForm.id}` 
+        : `${API_URL}/api/games`;
       const method = isEditing ? 'PUT' : 'POST';
 
       const response = await fetch(url, {
@@ -399,7 +401,7 @@ export default function App() {
     if (!result.isConfirmed) return;
 
     try {
-      const response = await fetch(`http://localhost:5000/api/games/${eventId}`, {
+      const response = await fetch(`${API_URL}/api/games/${eventId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`
