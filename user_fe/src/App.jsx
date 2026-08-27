@@ -12,7 +12,7 @@ import nteImg from './assets/nte.webp';
 import heroImg from './assets/hero.png';
 
 export default function App() {
-  const [selectedGame, setSelectedGame] = useState('Genshin Impact');
+  const [selectedGame, setSelectedGame] = useState('Home');
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [showScrollTop, setShowScrollTop] = useState(false);
