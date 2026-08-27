@@ -338,7 +338,7 @@ body {
   font-family: var(--font-heading);
   font-size: 38px;
   font-weight: 800;
-  line-weight: 1.1;
+  line-height: 1.1;
   color: var(--accent-teal);
   text-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
 }
