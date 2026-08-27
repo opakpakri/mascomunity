@@ -53,6 +53,7 @@ body {
 /* App Shell Layout */
 .app-container {
   display: flex;
+  align-items: flex-start;
   min-height: 100vh;
 }
 
@@ -66,6 +67,10 @@ body {
   flex-shrink: 0;
   transition: width 0.3s ease;
   z-index: 10;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
 }
 
 .sidebar.collapsed {
@@ -209,6 +214,7 @@ body {
   display: flex;
   flex-direction: column;
   min-width: 0;
+  min-height: 100vh;
 }
 
 /* Header */

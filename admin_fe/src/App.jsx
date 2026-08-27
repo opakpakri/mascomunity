@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { LogIn, LogOut, Plus, Trash2, Edit2, Shield, Calendar, Gamepad2, Layers, Image as ImageIcon, Eye, EyeOff, ArrowUp } from 'lucide-react';
+import { LogIn, LogOut, Plus, Trash2, Edit2, Shield, Calendar, Gamepad2, Layers, Image as ImageIcon, Eye, EyeOff, ArrowUp, Search, RotateCcw } from 'lucide-react';
 import Swal from 'sweetalert2';
 
 export default function App() {
@@ -45,6 +45,14 @@ export default function App() {
   const [events, setEvents] = useState([]);
   const [isEditing, setIsEditing] = useState(false);
   const [formErrors, setFormErrors] = useState({});
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 8;
+
+  // Search & Filter states
+  const [searchQuery, setSearchQuery] = useState('');
+  const [gameFilter, setGameFilter] = useState('all');
+  const [categoryFilter, setCategoryFilter] = useState('all');
+  const [statusFilter, setStatusFilter] = useState('all');
 
   // Dropdown options
   const gamesList = [
@@ -694,69 +702,202 @@ export default function App() {
 
             {/* EVENT VIEW LIST */}
             <div className="event-list">
-              <h2 className="event-list-title">All Countdowns ({events.length})</h2>
-              
-              {events.length === 0 ? (
-                <div className="no-data-msg">No active game events found in the database.</div>
-              ) : (
-                <div className="event-table-wrapper">
-                  <table className="event-table">
-                    <thead>
-                      <tr>
-                        <th>Game</th>
-                        <th>Event</th>
-                        <th>Category</th>
-                        <th>Status</th>
-                        <th>End Time</th>
-                        <th>Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {events.map((event) => (
-                        <tr key={event.id}>
-                          <td style={{ fontWeight: '600' }}>{event.nama_game}</td>
-                          <td>{event.nama_event}</td>
-                          <td>
-                            <span className={`badge ${event.kategori.toLowerCase() === 'endgame' || event.kategori.toLowerCase() === 'end game' ? 'badge-endgame' : 'badge-event'}`}>
-                              {event.kategori === 'endgame' ? 'End Game' : 'Event'}
+              {(() => {
+                const filteredEvents = events.filter(event => {
+                  const query = searchQuery.trim().toLowerCase();
+                  const matchesSearch = !query || 
+                    event.nama_event.toLowerCase().includes(query) ||
+                    event.nama_game.toLowerCase().includes(query);
+
+                  const matchesGame = gameFilter === 'all' || event.nama_game === gameFilter;
+
+                  const isEndgame = event.kategori && (
+                    event.kategori.toLowerCase() === 'endgame' || 
+                    event.kategori.toLowerCase() === 'end game'
+                  );
+                  const matchesCategory = categoryFilter === 'all' || (
+                    categoryFilter === 'endgame' ? isEndgame : !isEndgame
+                  );
+
+                  const matchesStatus = statusFilter === 'all' || (event.status || 'active') === statusFilter;
+
+                  return matchesSearch && matchesGame && matchesCategory && matchesStatus;
+                });
+
+                const totalPages = Math.ceil(filteredEvents.length / ITEMS_PER_PAGE) || 1;
+                const safePage = Math.min(currentPage, totalPages);
+                const pageStart = (safePage - 1) * ITEMS_PER_PAGE;
+                const pageEnd = pageStart + ITEMS_PER_PAGE;
+                const pageEvents = filteredEvents.slice(pageStart, pageEnd);
+                const hasActiveFilters = searchQuery !== '' || gameFilter !== 'all' || categoryFilter !== 'all' || statusFilter !== 'all';
+
+                return (
+                  <>
+                    <h2 className="event-list-title">
+                      All Countdowns ({filteredEvents.length}{hasActiveFilters ? ` filtered from ${events.length}` : ''})
+                    </h2>
+
+                    {/* SEARCH & FILTER BAR */}
+                    <div className="admin-filter-bar">
+                      <div className="search-input-wrapper">
+                        <Search size={16} className="search-icon" />
+                        <input 
+                          type="text" 
+                          placeholder="Search game or event name..." 
+                          value={searchQuery}
+                          onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
+                          className="search-input"
+                        />
+                      </div>
+
+                      <div className="filter-selects">
+                        <select 
+                          value={gameFilter} 
+                          onChange={(e) => { setGameFilter(e.target.value); setCurrentPage(1); }}
+                          className="filter-select"
+                        >
+                          <option value="all">All Games</option>
+                          {gamesList.map(game => (
+                            <option key={game} value={game}>{game}</option>
+                          ))}
+                        </select>
+
+                        <select 
+                          value={categoryFilter} 
+                          onChange={(e) => { setCategoryFilter(e.target.value); setCurrentPage(1); }}
+                          className="filter-select"
+                        >
+                          <option value="all">All Categories</option>
+                          <option value="endgame">End Game</option>
+                          <option value="event">Event</option>
+                        </select>
+
+                        <select 
+                          value={statusFilter} 
+                          onChange={(e) => { setStatusFilter(e.target.value); setCurrentPage(1); }}
+                          className="filter-select"
+                        >
+                          <option value="all">All Status</option>
+                          <option value="active">Active</option>
+                          <option value="expired">Expired</option>
+                        </select>
+
+                        {hasActiveFilters && (
+                          <button 
+                            className="reset-filter-btn" 
+                            onClick={() => {
+                              setSearchQuery('');
+                              setGameFilter('all');
+                              setCategoryFilter('all');
+                              setStatusFilter('all');
+                              setCurrentPage(1);
+                            }}
+                            title="Reset Filters"
+                          >
+                            <RotateCcw size={14} /> Reset
+                          </button>
+                        )}
+                      </div>
+                    </div>
+
+                    {events.length === 0 ? (
+                      <div className="no-data-msg">No active game events found in the database.</div>
+                    ) : filteredEvents.length === 0 ? (
+                      <div className="no-data-msg">No countdown events found matching your filter criteria.</div>
+                    ) : (
+                      <>
+                        <div className="event-table-wrapper">
+                          <table className="event-table">
+                            <thead>
+                              <tr>
+                                <th>Game</th>
+                                <th>Event</th>
+                                <th>Category</th>
+                                <th>Status</th>
+                                <th>End Time</th>
+                                <th>Actions</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {pageEvents.map((event) => (
+                                <tr key={event.id}>
+                                  <td style={{ fontWeight: '600' }}>{event.nama_game}</td>
+                                  <td>{event.nama_event}</td>
+                                  <td>
+                                    <span className={`badge ${event.kategori.toLowerCase() === 'endgame' || event.kategori.toLowerCase() === 'end game' ? 'badge-endgame' : 'badge-event'}`}>
+                                      {event.kategori === 'endgame' ? 'End Game' : 'Event'}
+                                    </span>
+                                  </td>
+                                  <td>
+                                    <span 
+                                      className="badge" 
+                                      style={{ 
+                                        backgroundColor: (event.status || 'active') === 'active' ? 'rgba(0, 255, 204, 0.1)' : 'rgba(255, 77, 77, 0.1)', 
+                                        color: (event.status || 'active') === 'active' ? '#00ffcc' : '#ff4d4d',
+                                        border: (event.status || 'active') === 'active' ? '1px solid rgba(0, 255, 204, 0.2)' : '1px solid rgba(255, 77, 77, 0.2)'
+                                      }}
+                                    >
+                                      {(event.status || 'active') === 'active' ? 'Active' : 'Expired'}
+                                    </span>
+                                  </td>
+                                  <td style={{ color: '#9095a9' }}>
+                                    {new Date(event.tanggal_berakhir).toLocaleString('en-US', {
+                                      month: 'short',
+                                      day: 'numeric',
+                                      hour: 'numeric',
+                                      minute: '2-digit'
+                                    })}
+                                  </td>
+                                  <td>
+                                    <div className="actions-cell">
+                                      <button className="edit-btn" onClick={() => handleEditClick(event)} title="Edit Event">
+                                        <Edit2 size={15} />
+                                      </button>
+                                      <button className="delete-btn" onClick={() => handleDeleteClick(event.id)} title="Delete Event">
+                                        <Trash2 size={15} />
+                                      </button>
+                                    </div>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+
+                        {/* Pagination Controls */}
+                        {totalPages > 1 && (
+                          <div className="pagination-controls">
+                            <span className="pagination-info">
+                              Showing {pageStart + 1}–{Math.min(pageEnd, filteredEvents.length)} of {filteredEvents.length} events
                             </span>
-                          </td>
-                          <td>
-                            <span 
-                              className="badge" 
-                              style={{ 
-                                backgroundColor: (event.status || 'active') === 'active' ? 'rgba(0, 255, 204, 0.1)' : 'rgba(255, 77, 77, 0.1)', 
-                                color: (event.status || 'active') === 'active' ? '#00ffcc' : '#ff4d4d',
-                                border: (event.status || 'active') === 'active' ? '1px solid rgba(0, 255, 204, 0.2)' : '1px solid rgba(255, 77, 77, 0.2)'
-                              }}
-                            >
-                              {(event.status || 'active') === 'active' ? 'Active' : 'Expired'}
-                            </span>
-                          </td>
-                          <td style={{ color: '#9095a9' }}>
-                            {new Date(event.tanggal_berakhir).toLocaleString('en-US', {
-                              month: 'short',
-                              day: 'numeric',
-                              hour: 'numeric',
-                              minute: '2-digit'
-                            })}
-                          </td>
-                          <td>
-                            <div className="actions-cell">
-                              <button className="edit-btn" onClick={() => handleEditClick(event)} title="Edit Event">
-                                <Edit2 size={15} />
-                              </button>
-                              <button className="delete-btn" onClick={() => handleDeleteClick(event.id)} title="Delete Event">
-                                <Trash2 size={15} />
-                              </button>
+                            <div className="pagination-btns">
+                              <button
+                                className="pagination-btn"
+                                disabled={safePage <= 1}
+                                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                              >‹ Prev</button>
+
+                              {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                                <button
+                                  key={page}
+                                  className={`pagination-btn ${page === safePage ? 'pagination-btn-active' : ''}`}
+                                  onClick={() => setCurrentPage(page)}
+                                >{page}</button>
+                              ))}
+
+                              <button
+                                className="pagination-btn"
+                                disabled={safePage >= totalPages}
+                                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                              >Next ›</button>
                             </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </>
+                );
+              })()}
             </div>
           </div>
         )}
