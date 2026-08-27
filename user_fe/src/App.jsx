@@ -11,14 +11,52 @@ import endfieldImg from './assets/endfield.webp';
 import nteImg from './assets/nte.webp';
 import heroImg from './assets/hero.png';
 
+const getGameFromHash = () => {
+  const hash = decodeURIComponent(window.location.hash.replace('#', '')).trim();
+  const validGames = [
+    'Genshin Impact',
+    'Honkai: Star Rail',
+    'Zenless Zone Zero',
+    'Wuthering Waves',
+    'Arknights Endfield',
+    'Neverness To Everness'
+  ];
+  const matched = validGames.find(g => g.toLowerCase() === hash.toLowerCase());
+  return matched || 'Home';
+};
+
 export default function App() {
-  const [selectedGame, setSelectedGame] = useState('Home');
+  const [selectedGame, setSelectedGame] = useState(() => getGameFromHash());
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [toastMessage, setToastMessage] = useState(null);
+
+  // Sync with browser back / forward navigation (popstate & hashchange)
+  useEffect(() => {
+    const handlePopState = () => {
+      const game = getGameFromHash();
+      setSelectedGame(game);
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    window.addEventListener('hashchange', handlePopState);
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+      window.removeEventListener('hashchange', handlePopState);
+    };
+  }, []);
+
+  const handleSelectGame = (game) => {
+    setSelectedGame(game);
+    const hash = game === 'Home' ? '#' : `#${encodeURIComponent(game)}`;
+    if (window.location.hash !== hash) {
+      window.history.pushState({ game }, '', hash);
+    }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   // Scroll listener for scroll-to-top button
   useEffect(() => {
@@ -135,7 +173,7 @@ export default function App() {
       {/* Navigation Sidebar */}
       <Sidebar 
         selectedGame={selectedGame} 
-        onSelectGame={setSelectedGame}
+        onSelectGame={handleSelectGame}
         isCollapsed={isSidebarCollapsed}
         setIsCollapsed={setIsSidebarCollapsed}
         isMobileMenuOpen={isMobileMenuOpen}
@@ -148,7 +186,13 @@ export default function App() {
         <header className="header">
           <div className="header-left">
             <div className="breadcrumb">
-              <span>Home</span>
+              <span 
+                style={{ cursor: 'pointer' }} 
+                onClick={() => handleSelectGame('Home')}
+                title="Go to Home"
+              >
+                Home
+              </span>
               {selectedGame !== 'Home' && (
                 <>
                   <span className="breadcrumb-separator">/</span>
@@ -201,7 +245,7 @@ export default function App() {
                     key={game.name} 
                     className="shortcut-card" 
                     style={{ backgroundImage: `url(${game.banner})` }}
-                    onClick={() => setSelectedGame(game.name)}
+                    onClick={() => handleSelectGame(game.name)}
                   >
                     <div className="shortcut-content">
                       <h3 className="shortcut-title">{game.name}</h3>
