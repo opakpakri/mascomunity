@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 
 export default function CountdownCard({ event }) {
   const [timeLeft, setTimeLeft] = useState({
-    status: 'active', // 'not_started', 'active', 'ended'
+    status: 'active', // 'active', 'ended'
     days: '00',
     hours: '00',
     minutes: '00',
@@ -25,20 +25,30 @@ export default function CountdownCard({ event }) {
   const imageSrc = event.gambar && event.gambar.trim() !== '' ? event.gambar : getPlaceholderImage(event.nama_game);
 
   useEffect(() => {
+    const isEndgame = event.kategori && (
+      event.kategori.toLowerCase() === 'endgame' || 
+      event.kategori.toLowerCase() === 'end game'
+    );
+
     const calculateTime = () => {
       const now = new Date().getTime();
-      const startTime = new Date(event.tanggal_mulai).getTime();
-      const endTime = new Date(event.tanggal_berakhir).getTime();
+      let startTime = new Date(event.tanggal_mulai).getTime();
+      let endTime = new Date(event.tanggal_berakhir).getTime();
 
-      if (now < startTime) {
-        // Event not started yet
-        const diff = startTime - now;
-        setTimeLeft({
-          status: 'not_started',
-          ...formatDiff(diff)
-        });
-      } else if (now > endTime) {
-        // Event already ended
+      // If category is endgame and time expired, auto-loop forward seamlessly
+      if (isEndgame && now > endTime) {
+        let duration = endTime - startTime;
+        if (duration <= 0) {
+          duration = 14 * 24 * 60 * 60 * 1000;
+        }
+        while (endTime <= now) {
+          startTime += duration;
+          endTime += duration;
+        }
+      }
+
+      if (now > endTime) {
+        // Non-endgame event expired
         setTimeLeft({
           status: 'ended',
           days: '00',
@@ -47,7 +57,7 @@ export default function CountdownCard({ event }) {
           seconds: '00'
         });
       } else {
-        // Event is active, counting down to end
+        // Active event or auto-looped endgame event
         const diff = endTime - now;
         setTimeLeft({
           status: 'active',
@@ -74,45 +84,16 @@ export default function CountdownCard({ event }) {
     const interval = setInterval(calculateTime, 1000);
 
     return () => clearInterval(interval);
-  }, [event.tanggal_mulai, event.tanggal_berakhir]);
+  }, [event.tanggal_mulai, event.tanggal_berakhir, event.kategori]);
 
   return (
     <div className="countdown-card">
       <div className="card-details">
         <div className="card-event-name">{event.nama_event}</div>
         
-        {timeLeft.status === 'ended' && (
-          <div className="timer-ended">EVENT ENDED</div>
-        )}
-        
-        {timeLeft.status === 'not_started' && (
-          <div>
-            <div className="timer-not-started">STARTS IN:</div>
-            <div className="timer-container">
-              <div className="timer-segment">
-                <div className="timer-box">{timeLeft.days}</div>
-                <div className="timer-label">Days</div>
-              </div>
-              <div className="timer-colon">:</div>
-              <div className="timer-segment">
-                <div className="timer-box">{timeLeft.hours}</div>
-                <div className="timer-label">Hrs</div>
-              </div>
-              <div className="timer-colon">:</div>
-              <div className="timer-segment">
-                <div className="timer-box">{timeLeft.minutes}</div>
-                <div className="timer-label">Min</div>
-              </div>
-              <div className="timer-colon">:</div>
-              <div className="timer-segment">
-                <div className="timer-box">{timeLeft.seconds}</div>
-                <div className="timer-label">Sec</div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {timeLeft.status === 'active' && (
+        {timeLeft.status === 'ended' ? (
+          <div className="timer-ended">EXPIRED</div>
+        ) : (
           <div className="timer-container">
             <div className="timer-segment">
               <div className="timer-box">{timeLeft.days}</div>
