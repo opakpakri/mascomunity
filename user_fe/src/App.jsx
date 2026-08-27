@@ -43,7 +43,7 @@ export default function App() {
     const fetchEvents = async () => {
       setLoading(true);
       try {
-        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+        const apiUrl = import.meta.env.VITE_API_URL || '';
         const response = await fetch(`${apiUrl}/api/games`);
         if (response.ok) {
           const data = await response.json();

@@ -9,7 +9,7 @@ export default function App() {
   const [toastMessage, setToastMessage] = useState(null);
   const [showScrollTop, setShowScrollTop] = useState(false);
 
-  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+  const API_URL = import.meta.env.VITE_API_URL || '';
 
   // Scroll listener for scroll-to-top button
   useEffect(() => {
