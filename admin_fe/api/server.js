@@ -3,13 +3,21 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+// Load .env from the api/ directory regardless of where the process was started
+dotenv.config({ path: join(__dirname, '.env') });
+
 import { supabase } from './supabaseClient.js';
 import { authenticateToken } from './authMiddleware.js';
 
-dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5002;
 const JWT_SECRET = process.env.JWT_SECRET || 'default-gacha-countdown-jwt-secret-key-12345';
 
 // Middlewares
@@ -393,3 +401,16 @@ app.delete('/api/games/:id', authenticateToken, async (req, res) => {
 });
 
 export default app;
+
+// Start local Express server when not running on Vercel
+if (!process.env.VERCEL) {
+  app.listen(PORT, () => {
+    console.log(`[API Server - admin_fe] Running on http://localhost:${PORT}`);
+    if (useFallback()) {
+      console.log('[Server] In-Memory fallback mode active (Supabase not configured)');
+    } else {
+      console.log('[Server] Connected to Supabase.');
+    }
+  });
+}
+
