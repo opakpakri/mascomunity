@@ -324,7 +324,8 @@ app.post('/api/games', authenticateToken, async (req, res) => {
     tanggal_mulai,
     tanggal_berakhir,
     gambar: gambar || '',
-    status: status || 'active'
+    status: status || 'active',
+    updated_at: new Date().toISOString()
   };
 
   try {
@@ -353,6 +354,7 @@ app.post('/api/games', authenticateToken, async (req, res) => {
 app.put('/api/games/:id', authenticateToken, async (req, res) => {
   const { id } = req.params;
   const { nama_game, nama_event, kategori, tanggal_mulai, tanggal_berakhir, gambar, status } = req.body;
+  const updatedAt = new Date().toISOString();
 
   try {
     if (useFallback()) {
@@ -369,7 +371,8 @@ app.put('/api/games/:id', authenticateToken, async (req, res) => {
         tanggal_mulai: tanggal_mulai || fallbackDb.games[idx].tanggal_mulai,
         tanggal_berakhir: tanggal_berakhir || fallbackDb.games[idx].tanggal_berakhir,
         gambar: gambar !== undefined ? gambar : fallbackDb.games[idx].gambar,
-        status: status || fallbackDb.games[idx].status
+        status: status || fallbackDb.games[idx].status,
+        updated_at: updatedAt
       };
 
       return res.json(fallbackDb.games[idx]);
@@ -377,7 +380,7 @@ app.put('/api/games/:id', authenticateToken, async (req, res) => {
 
     const { data, error } = await supabase
       .from('game')
-      .update({ nama_game, nama_event, kategori, tanggal_mulai, tanggal_berakhir, gambar, status })
+      .update({ nama_game, nama_event, kategori, tanggal_mulai, tanggal_berakhir, gambar, status, updated_at: updatedAt })
       .eq('id', id)
       .select('*')
       .single();

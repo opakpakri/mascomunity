@@ -389,19 +389,14 @@ body {
 
 .divider-line {
   height: 2px;
-  background-color: var(--border-color);
+  background-color: var(--accent-teal);
   margin-bottom: 20px;
-  position: relative;
+  width: 100%;
+  border-radius: 1px;
 }
 
 .divider-line::after {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 0;
-  height: 2px;
-  width: 100px;
-  background-color: var(--accent-teal);
+  display: none;
 }
 
 .description-text {

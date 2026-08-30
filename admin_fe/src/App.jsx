@@ -64,10 +64,63 @@ export default function App() {
     'Neverness To Everness'
   ];
 
+  const handleSessionExpired = (message = 'Sesi Anda telah berakhir (24 jam / Expired). Silakan login kembali.') => {
+    localStorage.removeItem('admin_token');
+    localStorage.removeItem('admin_user');
+    localStorage.removeItem('admin_login_time');
+    setToken(null);
+    setAdminUser(null);
+    setView('login');
+    Swal.fire({
+      icon: 'warning',
+      title: 'Sesi Kedaluwarsa',
+      text: message,
+      background: '#191b24',
+      color: '#ffffff'
+    });
+  };
+
+  const isTokenExpired = (tokenString) => {
+    if (!tokenString) return true;
+    try {
+      const payloadBase64 = tokenString.split('.')[1];
+      if (payloadBase64) {
+        const decoded = JSON.parse(atob(payloadBase64));
+        if (decoded && decoded.exp) {
+          if (Date.now() >= decoded.exp * 1000) return true;
+        }
+      }
+    } catch (e) {
+      // ignore parse error
+    }
+    const loginTime = localStorage.getItem('admin_login_time');
+    if (loginTime) {
+      const age = Date.now() - parseInt(loginTime, 10);
+      if (age >= 24 * 60 * 60 * 1000) {
+        return true;
+      }
+    }
+    return false;
+  };
+
   useEffect(() => {
     if (token) {
+      if (isTokenExpired(token)) {
+        handleSessionExpired('Token / Sesi 24 Jam Anda telah kedaluwarsa. Silakan login kembali.');
+        return;
+      }
       setView('dashboard');
       fetchEvents();
+
+      const interval = setInterval(() => {
+        if (isTokenExpired(token)) {
+          handleSessionExpired('Waktu sesi Anda (24 jam) telah habis. Silakan login kembali.');
+        }
+      }, 15000);
+
+      return () => clearInterval(interval);
+    } else {
+      setView('login');
     }
   }, [token]);
 
@@ -183,6 +236,7 @@ export default function App() {
       if (response.ok) {
         localStorage.setItem('admin_token', data.token);
         localStorage.setItem('admin_user', JSON.stringify(data.user));
+        localStorage.setItem('admin_login_time', Date.now().toString());
         setToken(data.token);
         setAdminUser(data.user);
         Swal.fire({
@@ -231,6 +285,7 @@ export default function App() {
       if (response.ok) {
         localStorage.setItem('admin_token', data.token);
         localStorage.setItem('admin_user', JSON.stringify(data.user));
+        localStorage.setItem('admin_login_time', Date.now().toString());
         setToken(data.token);
         setAdminUser(data.user);
         setView('dashboard');
@@ -275,6 +330,7 @@ export default function App() {
 
     localStorage.removeItem('admin_token');
     localStorage.removeItem('admin_user');
+    localStorage.removeItem('admin_login_time');
     setToken(null);
     setAdminUser(null);
     setView('login');
@@ -314,7 +370,8 @@ export default function App() {
     const payload = {
       ...eventForm,
       tanggal_mulai: new Date(eventForm.tanggal_mulai).toISOString(),
-      tanggal_berakhir: new Date(eventForm.tanggal_berakhir).toISOString()
+      tanggal_berakhir: new Date(eventForm.tanggal_berakhir).toISOString(),
+      updated_at: new Date().toISOString()
     };
 
     try {
@@ -331,6 +388,10 @@ export default function App() {
         },
         body: JSON.stringify(payload)
       });
+
+      if (response.status === 401 || response.status === 403) {
+        return handleSessionExpired('Sesi Anda tidak valid atau telah kedaluwarsa. Silakan login kembali.');
+      }
 
       if (response.ok) {
         Swal.fire({
@@ -415,6 +476,10 @@ export default function App() {
           'Authorization': `Bearer ${token}`
         }
       });
+
+      if (response.status === 401 || response.status === 403) {
+        return handleSessionExpired('Sesi Anda tidak valid atau telah kedaluwarsa. Silakan login kembali.');
+      }
 
       if (response.ok) {
         Swal.fire({

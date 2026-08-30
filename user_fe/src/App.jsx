@@ -11,8 +11,14 @@ import endfieldImg from './assets/endfield.webp';
 import nteImg from './assets/nte.webp';
 import heroImg from './assets/hero.png';
 
+const gameToSlug = (gameName) => {
+  if (!gameName || gameName === 'Home') return '';
+  // Removes spaces, colons, and special characters and converts to lowercase -> e.g. "Arknights Endfield" becomes "arknightsendfield"
+  return gameName.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+};
+
 const getGameFromHash = () => {
-  const hash = decodeURIComponent(window.location.hash.replace('#', '')).trim();
+  const rawHash = decodeURIComponent(window.location.hash.replace('#', '')).trim().toLowerCase();
   const validGames = [
     'Genshin Impact',
     'Honkai: Star Rail',
@@ -21,7 +27,11 @@ const getGameFromHash = () => {
     'Arknights Endfield',
     'Neverness To Everness'
   ];
-  const matched = validGames.find(g => g.toLowerCase() === hash.toLowerCase());
+  if (!rawHash) return 'Home';
+  const matched = validGames.find(g => {
+    const slug = gameToSlug(g);
+    return slug === rawHash || g.toLowerCase() === rawHash;
+  });
   return matched || 'Home';
 };
 
@@ -51,7 +61,8 @@ export default function App() {
 
   const handleSelectGame = (game) => {
     setSelectedGame(game);
-    const hash = game === 'Home' ? '#' : `#${encodeURIComponent(game)}`;
+    const slug = gameToSlug(game);
+    const hash = slug ? `#${slug}` : '#';
     if (window.location.hash !== hash) {
       window.history.pushState({ game }, '', hash);
     }
@@ -146,10 +157,27 @@ export default function App() {
   const endGameEvents = filteredEvents.filter(e => e.kategori.toLowerCase() === 'endgame' || e.kategori.toLowerCase() === 'end game');
   const otherEvents = filteredEvents.filter(e => e.kategori.toLowerCase() === 'event' || e.kategori.toLowerCase() === 'content');
 
-  // Format today's date Indonesian style matching Ags 27, 2026
-  const getFormattedDate = () => {
+  // Format last updated date based on the latest admin input/update timestamp
+  const getFormattedLastUpdated = () => {
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Ags', 'Sep', 'Okt', 'Nov', 'Des'];
-    const d = new Date();
+
+    if (!events || events.length === 0) {
+      return 'Ags 30, 2026';
+    }
+
+    let latestTime = 0;
+    events.forEach(e => {
+      const t = new Date(e.updated_at || e.created_at || e.tanggal_mulai || 0).getTime();
+      if (!isNaN(t) && t > latestTime) {
+        latestTime = t;
+      }
+    });
+
+    if (latestTime === 0) {
+      return 'Ags 30, 2026';
+    }
+
+    const d = new Date(latestTime);
     return `${months[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`;
   };
 
@@ -220,7 +248,7 @@ export default function App() {
               <div className="banner-subtitle">
                 {selectedGame === 'Home' ? 'ALL ACTIVE EVENTS' : 'CONTENT COUNT DOWN'}
               </div>
-              <div className="banner-meta">Last updated: {getFormattedDate()}</div>
+              <div className="banner-meta">Last updated: {getFormattedLastUpdated()}</div>
             </div>
           </div>
 
@@ -271,6 +299,7 @@ export default function App() {
                   {/* END GAME COLUMN */}
                   <div className="category-column">
                     <h3 className="category-title">End Game</h3>
+                    <div className="divider-line" style={{ marginBottom: '16px' }}></div>
                     {endGameEvents.length === 0 ? (
                       <div className="no-data-msg">No end-game countdowns currently active.</div>
                     ) : (
@@ -283,6 +312,7 @@ export default function App() {
                   {/* EVENTS COLUMN */}
                   <div className="category-column">
                     <h3 className="category-title">Event</h3>
+                    <div className="divider-line" style={{ marginBottom: '16px' }}></div>
                     {otherEvents.length === 0 ? (
                       <div className="no-data-msg">No game events currently active.</div>
                     ) : (
