@@ -317,27 +317,26 @@ app.post('/api/games', authenticateToken, async (req, res) => {
     return res.status(400).json({ message: 'All fields except image are required' });
   }
 
-  const newEvent = {
+  const dbPayload = {
     nama_game,
     nama_event,
     kategori,
     tanggal_mulai,
     tanggal_berakhir,
     gambar: gambar || '',
-    status: status || 'active',
-    updated_at: new Date().toISOString()
+    status: status || 'active'
   };
 
   try {
     if (useFallback()) {
-      const createdEvent = { id: crypto.randomUUID(), ...newEvent };
+      const createdEvent = { id: crypto.randomUUID(), ...dbPayload, updated_at: new Date().toISOString() };
       fallbackDb.games.push(createdEvent);
       return res.status(201).json(createdEvent);
     }
 
     const { data, error } = await supabase
       .from('game')
-      .insert([newEvent])
+      .insert([dbPayload])
       .select('*')
       .single();
 
@@ -354,7 +353,18 @@ app.post('/api/games', authenticateToken, async (req, res) => {
 app.put('/api/games/:id', authenticateToken, async (req, res) => {
   const { id } = req.params;
   const { nama_game, nama_event, kategori, tanggal_mulai, tanggal_berakhir, gambar, status } = req.body;
-  const updatedAt = new Date().toISOString();
+
+  const updatePayload = {
+    nama_game,
+    nama_event,
+    kategori,
+    tanggal_mulai,
+    tanggal_berakhir,
+    gambar,
+    status
+  };
+
+  Object.keys(updatePayload).forEach(key => updatePayload[key] === undefined && delete updatePayload[key]);
 
   try {
     if (useFallback()) {
@@ -365,14 +375,8 @@ app.put('/api/games/:id', authenticateToken, async (req, res) => {
 
       fallbackDb.games[idx] = {
         ...fallbackDb.games[idx],
-        nama_game: nama_game || fallbackDb.games[idx].nama_game,
-        nama_event: nama_event || fallbackDb.games[idx].nama_event,
-        kategori: kategori || fallbackDb.games[idx].kategori,
-        tanggal_mulai: tanggal_mulai || fallbackDb.games[idx].tanggal_mulai,
-        tanggal_berakhir: tanggal_berakhir || fallbackDb.games[idx].tanggal_berakhir,
-        gambar: gambar !== undefined ? gambar : fallbackDb.games[idx].gambar,
-        status: status || fallbackDb.games[idx].status,
-        updated_at: updatedAt
+        ...updatePayload,
+        updated_at: new Date().toISOString()
       };
 
       return res.json(fallbackDb.games[idx]);
@@ -380,7 +384,7 @@ app.put('/api/games/:id', authenticateToken, async (req, res) => {
 
     const { data, error } = await supabase
       .from('game')
-      .update({ nama_game, nama_event, kategori, tanggal_mulai, tanggal_berakhir, gambar, status, updated_at: updatedAt })
+      .update(updatePayload)
       .eq('id', id)
       .select('*')
       .single();

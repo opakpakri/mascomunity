@@ -368,10 +368,13 @@ export default function App() {
 
     // Format ISO Dates
     const payload = {
-      ...eventForm,
+      nama_game: eventForm.nama_game,
+      nama_event: eventForm.nama_event,
+      kategori: eventForm.kategori,
       tanggal_mulai: new Date(eventForm.tanggal_mulai).toISOString(),
       tanggal_berakhir: new Date(eventForm.tanggal_berakhir).toISOString(),
-      updated_at: new Date().toISOString()
+      gambar: eventForm.gambar || '',
+      status: eventForm.status || 'active'
     };
 
     try {
